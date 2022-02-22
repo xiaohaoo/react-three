@@ -43,8 +43,8 @@ export default function App() {
 
         let onMouseDown = false;
 
-        window.ontouchstart = (event) => {
-            const touch = event.changedTouches[0];
+        const onStart = (event: TouchEvent | MouseEvent) => {
+            const touch = event instanceof TouchEvent ? event.changedTouches[0] : event;
             start.x = touch.clientX;
             start.y = touch.clientY;
             last.x = touch.clientX;
@@ -52,13 +52,29 @@ export default function App() {
             onMouseDown = true;
         };
 
-        window.onmousedown = (event) => {
-            start.x = event.clientX;
-            start.y = event.clientY;
-            last.x = event.clientX;
-            last.y = event.clientY;
-            onMouseDown = true;
+        const onEnd = (event: TouchEvent | MouseEvent) => {
+            onMouseDown = false;
         };
+
+        const onMove = (event: TouchEvent | MouseEvent) => {
+            if (onMouseDown) {
+                const touch = event instanceof TouchEvent ? event.changedTouches[0] : event;
+                const x = ( touch.clientX - last.x ) * -0.002;
+                const y = ( touch.clientY - last.y ) * -0.002;
+                last.x = touch.clientX;
+                last.y = touch.clientY;
+                camera.rotateX(-y);
+                camera.rotateY(-x);
+            }
+        };
+        window.ontouchstart = onStart;
+        window.onmousedown = onStart;
+
+        window.onmousemove = onMove;
+        window.ontouchmove = onMove;
+
+        window.onmouseup = onEnd;
+        window.ontouchend = onEnd;
 
         window.onwheel = (event) => {
             if (event.deltaY != 0) {
@@ -68,41 +84,6 @@ export default function App() {
                 camera.fov < 30 && ( camera.fov = 30 );
                 camera.updateProjectionMatrix();
             }
-        };
-
-
-        window.onmousemove = (event) => {
-            if (onMouseDown) {
-                const x = ( event.clientX - last.x ) * -0.002;
-                const y = ( event.clientY - last.y ) * -0.002;
-                last.x = event.clientX;
-                last.y = event.clientY;
-                camera.rotateX(-y);
-                camera.rotateY(-x);
-            }
-
-        };
-
-        window.ontouchmove = (event) => {
-            if (onMouseDown) {
-                const touch = event.changedTouches[0];
-                const x = ( touch.clientX - last.x ) * -0.002;
-                const y = ( touch.clientY - last.y ) * -0.002;
-                last.x = touch.clientX;
-                last.y = touch.clientY;
-                camera.rotateX(-y);
-                camera.rotateY(-x);
-            }
-
-        };
-
-        window.onmouseup = () => {
-            onMouseDown = false;
-        };
-
-
-        window.ontouchend = () => {
-            onMouseDown = false;
         };
 
     }, []);
