@@ -1,0 +1,8 @@
+{
+  "short_name": "智能实习就业系统管理平台",
+  "name": "智能实习就业系统管理平台",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
