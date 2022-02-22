@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { useEffect, useRef } from "react";
+import Hammer from "hammerjs"; //引用hammerjs
 
 export default function App() {
     const scene = new THREE.Scene();
@@ -17,6 +18,7 @@ export default function App() {
     mesh.position.copy(new THREE.Vector3(0, 0, 0));
 
     scene.add(mesh);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
     useEffect(() => {
         const renderer = new THREE.WebGLRenderer({
@@ -30,57 +32,34 @@ export default function App() {
             renderer.render(scene, camera);
         };
         renderer.setAnimationLoop(render);
-        const start: { [key: string]: number } = {
-            x: 0,
-            y: 0,
-            z: 0
-        };
-        const last: { [key: string]: number } = {
-            x: 0,
-            y: 0,
-            z: 0
-        };
 
-        let onMouseDown = false;
+        const hammer = new Hammer(canvasRef.current!);
+        hammer.get("pinch").set({ enable: true });
+        hammer.get("pan").set({ direction: Hammer.DIRECTION_ALL });
 
-        const onStart = (event: TouchEvent | MouseEvent) => {
-            const touch = event instanceof TouchEvent ? event.changedTouches[0] : event;
-            start.x = touch.clientX;
-            start.y = touch.clientY;
-            last.x = touch.clientX;
-            last.y = touch.clientY;
-            onMouseDown = true;
-        };
-
-        const onEnd = (event: TouchEvent | MouseEvent) => {
-            onMouseDown = false;
-        };
-
-        const onMove = (event: TouchEvent | MouseEvent) => {
-            if (onMouseDown) {
-                const touch = event instanceof TouchEvent ? event.changedTouches[0] : event;
-                const x = ( touch.clientX - last.x ) * -0.002;
-                const y = ( touch.clientY - last.y ) * -0.002;
-                last.x = touch.clientX;
-                last.y = touch.clientY;
-                camera.rotateX(-y);
-                camera.rotateY(-x);
+        //缩放事件
+        hammer.on("pinchmove", (event) => {
+            if (event.scale < 1) {
+                camera.fov = camera.fov + event.distance * 0.1;
+            } else {
+                camera.fov = camera.fov - event.distance * 0.1;
             }
-        };
-        window.ontouchstart = onStart;
-        window.onmousedown = onStart;
+            camera.fov > 115 && ( camera.fov = 115 );
+            camera.fov < 30 && ( camera.fov = 30 );
+            camera.updateProjectionMatrix();
+        });
 
-        window.onmousemove = onMove;
-        window.ontouchmove = onMove;
+        //滑动事件
+        hammer.on("panmove", (event) => {
+            camera.rotateX(event.deltaY * 0.0003);
+            camera.rotateY(event.deltaX * 0.0003);
+        });
 
-        window.onmouseup = onEnd;
-        window.ontouchend = onEnd;
 
-        window.onwheel = (event) => {
+        window.onwheel = (event: WheelEvent) => {
             if (event.deltaY != 0) {
-                console.log("onwheel", event.deltaY);
                 camera.fov = camera.fov + event.deltaY * 0.01;
-                camera.fov > 100 && ( camera.fov = 100 );
+                camera.fov > 115 && ( camera.fov = 115 );
                 camera.fov < 30 && ( camera.fov = 30 );
                 camera.updateProjectionMatrix();
             }
@@ -89,6 +68,5 @@ export default function App() {
     }, []);
 
 
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
     return <canvas ref={canvasRef} />;
 }

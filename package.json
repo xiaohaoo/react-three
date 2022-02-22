@@ -13,6 +13,7 @@
     "eject": "react-scripts eject"
   },
   "dependencies": {
+    "hammerjs": "^2.0.8",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-config": "^5.1.1",
@@ -22,18 +23,19 @@
   },
   "devDependencies": {
     "@craco/craco": "^6.3.0",
+    "@types/hammerjs": "^2.0.41",
     "@types/node": "^12.20.10",
     "@types/react": "^17.0.2",
     "@types/react-dom": "^17.0.2",
     "@types/react-router-config": "^5.0.3",
     "@types/react-router-dom": "^5.3.1",
     "@types/three": "^0.137.0",
+    "craco-less": "^1.20.0",
     "prettier": "2.5.1",
     "react-scripts": "^4.0.3",
     "simple-progress-webpack-plugin": "^2.0.0",
     "web-vitals": "^1.1.1",
-    "webpackbar": "^5.0.0-3",
-    "craco-less": "^1.20.0"
+    "webpackbar": "^5.0.0-3"
   },
   "browserslist": {
     "production": [
