@@ -25,24 +25,25 @@ export default function App() {
 
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
+    //场景
     const scene = new THREE.Scene();
 
+    //场景组
     const group = new THREE.Group();
     const groupNext = new THREE.Group();
     const commonGroup = new THREE.Group();
 
     //屏幕渲染相机
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 5);
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50);
     camera.position.copy(new THREE.Vector3(0, 0, 30));
 
     //辅助坐标根据
     const axesHelper = new THREE.AxesHelper(120);
     commonGroup.add(axesHelper);
 
-    //辅助相机工具
-    const cameraHelper = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 5);
-    const helper = new THREE.CameraHelper(cameraHelper);
-    commonGroup.add(helper);
+    //相机辅助工具
+    const cameraHelper = new THREE.CameraHelper(new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50));
+    commonGroup.add(cameraHelper);
 
     //全景球
     const geometry = new THREE.SphereBufferGeometry(80, 60, 60);
@@ -66,10 +67,8 @@ export default function App() {
     groupNext.add(meshNext);
 
     //指示文字精灵
-    const texture = new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/yonger.png");
-    texture.needsUpdate = true;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: texture,
+        map: new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/yonger.png"),
         transparent: true
     }));
     sprite.scale.set(18, 6, 1);
@@ -91,6 +90,7 @@ export default function App() {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
 
+        //性能检测工具
         const stats = new Stats();
         document.body.appendChild(stats.dom);
 
@@ -102,10 +102,11 @@ export default function App() {
         orbitControls.minDistance = 2;
         orbitControls.maxDistance = 75;
         orbitControls.panSpeed = 2;
+        orbitControls.enablePan = false;
 
         const render = () => {
             orbitControls.update();
-            helper.update();
+            cameraHelper.update();
             renderer.render(scene, camera);
             stats.update();
         };
@@ -138,6 +139,5 @@ export default function App() {
         renderer.setAnimationLoop(render);
 
     }, []);
-
     return <canvas ref={canvasRef} />;
 }
