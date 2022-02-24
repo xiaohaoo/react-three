@@ -14,17 +14,20 @@ export default function App() {
     const groupNext = new THREE.Group();
     const commonGroup = new THREE.Group();
 
-    const camera = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight);
-    camera.position.copy(new THREE.Vector3(0, 0, 10));
+    //屏幕渲染相机
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 5);
+    camera.position.copy(new THREE.Vector3(0, 0, 30));
 
+    //辅助坐标根据
     const axesHelper = new THREE.AxesHelper(120);
     commonGroup.add(axesHelper);
 
-
-    const cameraHelper = new THREE.PerspectiveCamera(65, window.innerWidth / window.innerHeight);
+    //辅助相机工具
+    const cameraHelper = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 5);
     const helper = new THREE.CameraHelper(cameraHelper);
     commonGroup.add(helper);
 
+    //全景球
     const geometry = new THREE.SphereBufferGeometry(80, 60, 60);
     geometry.scale(-1, 1, 1);
 
@@ -36,28 +39,25 @@ export default function App() {
     mesh.position.copy(new THREE.Vector3(0, 0, 0));
     group.add(mesh);
 
-    const geometryNext = new THREE.SphereBufferGeometry(80, 60, 60);
-    geometryNext.scale(-1, 1, 1);
 
     const materialNext = new THREE.MeshBasicMaterial({
         map: new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/panorama3.png")
     });
 
-    const meshNext = new THREE.Mesh(geometryNext, materialNext);
+    const meshNext = new THREE.Mesh(geometry, materialNext);
     meshNext.position.copy(new THREE.Vector3(0, 0, 0));
     groupNext.add(meshNext);
 
-    //指示文字
+    //指示文字精灵
     const texture = new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/yonger.png");
     texture.needsUpdate = true;
     const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
         map: texture,
         transparent: true
     }));
-    sprite.scale.set(10, 4, 1);
-    sprite.position.set(0, 0, -35);
+    sprite.scale.set(18, 6, 1);
+    sprite.position.set(0, 0, -72);
     sprite.center.set(0.5, 0);
-
     commonGroup.add(sprite);
 
     scene.add(group);
@@ -66,6 +66,7 @@ export default function App() {
     const indexRef = useRef(0);
 
     useEffect(() => {
+        //渲染器
         const renderer = new THREE.WebGLRenderer({
             canvas: canvasRef.current!,
             antialias: true
@@ -76,11 +77,12 @@ export default function App() {
         const stats = new Stats();
         document.body.appendChild(stats.dom);
 
+        //相机控制工具
         const orbitControls = new OrbitControls(camera, renderer.domElement);
         orbitControls.autoRotate = true;
         orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
         orbitControls.target = mesh.position;
-        orbitControls.minDistance = 2.5;
+        orbitControls.minDistance = 2;
         orbitControls.maxDistance = 75;
         orbitControls.panSpeed = 2;
 
@@ -91,35 +93,31 @@ export default function App() {
             stats.update();
         };
 
-
+        //手势检测
         const hammer = new Hammer(document.body);
         hammer.on("tap", (event) => {
             const x = ( event.center.x / window.innerWidth ) * 2 - 1;
             const y = -( event.center.y / window.innerHeight ) * 2 + 1;
-            const vector = new THREE.Vector3(x, y, sprite.position.z).unproject(camera);
-            const raycaster = new THREE.Raycaster(camera.position, vector.sub(camera.position).normalize());
-            raycaster.camera = camera;
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
             const intersects = raycaster.intersectObject(sprite);
-
             if (intersects.length > 0) {
                 orbitControls.reset();
                 if (indexRef.current === 1) {
                     scene.clear();
-                    sprite.position.set(0, 0, -35);
+                    sprite.position.set(0, 0, -72);
                     scene.add(group);
                     scene.add(commonGroup);
                     indexRef.current = 0;
                 } else {
                     scene.clear();
-                    sprite.position.set(10, 20, -35);
+                    sprite.position.set(0, 28, -70);
                     scene.add(groupNext);
                     scene.add(commonGroup);
                     indexRef.current = 1;
                 }
             }
         });
-
-
         renderer.setAnimationLoop(render);
 
     }, []);
