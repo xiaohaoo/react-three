@@ -35,7 +35,8 @@ export default function App() {
 
     //屏幕渲染相机
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50);
-    camera.position.copy(new THREE.Vector3(0, 0, 30));
+    camera.position.copy(new THREE.Vector3(0, 0, 1000));
+
 
     //辅助坐标根据
     const axesHelper = new THREE.AxesHelper(120);
@@ -96,15 +97,32 @@ export default function App() {
 
         //相机控制工具
         const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.autoRotate = true;
         orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
         orbitControls.target = mesh.position;
         orbitControls.minDistance = 2;
-        orbitControls.maxDistance = 75;
         orbitControls.panSpeed = 2;
         orbitControls.enablePan = false;
+        orbitControls.autoRotate = true;
 
-        const render = () => {
+        const cameraAnimation = () => {
+            orbitControls.maxDistance = Number.POSITIVE_INFINITY;
+            camera.position.copy(new THREE.Vector3(0, 0, 1000));
+            const interval = setInterval(() => {
+                camera.position.z -= 1000 / ( 800 / 50 );
+                mesh.rotation.y += 3 * Math.PI / ( 800 / 50 );
+                meshNext.rotation.y = mesh.rotation.y;
+            }, 50);
+            setTimeout(() => {
+                orbitControls.maxDistance = 75;
+                mesh.rotation.set(0, 0, 0);
+                meshNext.rotation.set(0, 0, 0);
+                camera.position.copy(new THREE.Vector3(0, 0, 30));
+                clearInterval(interval);
+            }, 800);
+        };
+        cameraAnimation();
+
+        const render = (event: number) => {
             orbitControls.update();
             cameraHelper.update();
             renderer.render(scene, camera);
@@ -121,6 +139,7 @@ export default function App() {
             const intersects = raycaster.intersectObject(sprite);
             if (intersects.length > 0) {
                 orbitControls.reset();
+                cameraAnimation();
                 if (indexRef.current === 1) {
                     scene.clear();
                     sprite.position.set(0, 0, -72);
