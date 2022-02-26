@@ -23,7 +23,7 @@ import Hammer from "hammerjs";
 
 export default function App() {
 
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
+    const viewRef = useRef<HTMLDivElement>(null);
 
     //场景
     const scene = new THREE.Scene();
@@ -35,7 +35,10 @@ export default function App() {
 
     //屏幕渲染相机
     const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50);
-    camera.position.copy(new THREE.Vector3(0, 0, 1000));
+
+    const cameraEndPosition = new THREE.Vector3(0, 0, 30);
+    const cameraStartPosition = new THREE.Vector3(0, 0, 1000);
+    camera.position.copy(cameraStartPosition);
 
 
     //辅助坐标根据
@@ -80,57 +83,48 @@ export default function App() {
     scene.add(group);
     scene.add(commonGroup);
 
+    //性能检测工具
+    const stats = new Stats();
+
     const indexRef = useRef(0);
 
+    //渲染器
+    const renderer = new THREE.WebGLRenderer({
+        antialias: true
+    });
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    //相机控制工具
+    const orbitControls = new OrbitControls(camera, renderer.domElement);
+    orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
+    orbitControls.target = mesh.position;
+    orbitControls.minDistance = 2;
+    orbitControls.panSpeed = 2;
+    orbitControls.enablePan = false;
+    orbitControls.autoRotate = true;
+
+    const cameraAnimation = () => {
+        orbitControls.maxDistance = Number.POSITIVE_INFINITY;
+        camera.position.copy(cameraStartPosition);
+        const terval = setInterval(() => {
+            camera.position.z -= 1000 / ( 800 / 50 );
+            mesh.rotation.z += 3 * Math.PI / ( 800 / 50 );
+            meshNext.rotation.copy(mesh.rotation);
+        }, 50);
+        setTimeout(() => {
+            orbitControls.maxDistance = 75;
+            mesh.rotation.set(0, 0, 0);
+            meshNext.rotation.set(0, 0, 0);
+            camera.position.copy(cameraEndPosition);
+            clearInterval(terval);
+        }, 800);
+    };
+
+
     useEffect(() => {
-        //渲染器
-        const renderer = new THREE.WebGLRenderer({
-            canvas: canvasRef.current!,
-            antialias: true
-        });
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(window.innerWidth, window.innerHeight);
-
-        //性能检测工具
-        const stats = new Stats();
-        document.body.appendChild(stats.dom);
-
-        //相机控制工具
-        const orbitControls = new OrbitControls(camera, renderer.domElement);
-        orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
-        orbitControls.target = mesh.position;
-        orbitControls.minDistance = 2;
-        orbitControls.panSpeed = 2;
-        orbitControls.enablePan = false;
-        orbitControls.autoRotate = true;
-
-        const cameraAnimation = () => {
-            orbitControls.maxDistance = Number.POSITIVE_INFINITY;
-            camera.position.copy(new THREE.Vector3(0, 0, 1000));
-            const interval = setInterval(() => {
-                camera.position.z -= 1000 / ( 800 / 50 );
-                mesh.rotation.y += 3 * Math.PI / ( 800 / 50 );
-                meshNext.rotation.y = mesh.rotation.y;
-            }, 50);
-            setTimeout(() => {
-                orbitControls.maxDistance = 75;
-                mesh.rotation.set(0, 0, 0);
-                meshNext.rotation.set(0, 0, 0);
-                camera.position.copy(new THREE.Vector3(0, 0, 30));
-                clearInterval(interval);
-            }, 800);
-        };
-        cameraAnimation();
-
-        const render = (event: number) => {
-            orbitControls.update();
-            cameraHelper.update();
-            renderer.render(scene, camera);
-            stats.update();
-        };
-
         //手势检测
-        const hammer = new Hammer(document.body);
+        const hammer = new Hammer(viewRef?.current || document.body);
         hammer.on("tap", (event) => {
             const x = ( event.center.x / window.innerWidth ) * 2 - 1;
             const y = -( event.center.y / window.innerHeight ) * 2 + 1;
@@ -155,8 +149,20 @@ export default function App() {
                 }
             }
         });
+
+        viewRef?.current?.appendChild(renderer.domElement);
+        viewRef?.current?.appendChild(stats.dom);
+
+        cameraAnimation();
+
+        const render = (event: number) => {
+            orbitControls.update();
+            cameraHelper.update();
+            renderer.render(scene, camera);
+            stats.update();
+        };
         renderer.setAnimationLoop(render);
 
     }, []);
-    return <canvas ref={canvasRef} />;
+    return <div ref={viewRef} />;
 }
