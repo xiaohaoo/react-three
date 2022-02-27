@@ -15,114 +15,141 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-import * as THREE from "three";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls";
 import Stats from "stats.js";
 import Hammer from "hammerjs";
+import * as THREE from "three";
 
 export default function App() {
 
     const viewRef = useRef<HTMLDivElement>(null);
 
-    //场景
-    const scene = new THREE.Scene();
+    const [process, setProcess] = useState(0);
 
-    //场景组
-    const group = new THREE.Group();
-    const groupNext = new THREE.Group();
-    const commonGroup = new THREE.Group();
+    console.log("开始加载...");
 
-    //屏幕渲染相机
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50);
-
-    const cameraEndPosition = new THREE.Vector3(0, 0, 30);
-    const cameraStartPosition = new THREE.Vector3(0, 0, 1000);
-    camera.position.copy(cameraStartPosition);
-
-
-    //辅助坐标根据
-    const axesHelper = new THREE.AxesHelper(120);
-    commonGroup.add(axesHelper);
-
-    //相机辅助工具
-    const cameraHelper = new THREE.CameraHelper(new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50));
-    commonGroup.add(cameraHelper);
-
-    //全景球
-    const geometry = new THREE.SphereBufferGeometry(80, 60, 60);
-    geometry.scale(-1, 1, 1);
-
-    const material = new THREE.MeshBasicMaterial({
-        map: new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/panorama.png")
-    });
-
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.position.copy(new THREE.Vector3(0, 0, 0));
-    group.add(mesh);
-
-
-    const materialNext = new THREE.MeshBasicMaterial({
-        map: new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/panorama3.png")
-    });
-
-    const meshNext = new THREE.Mesh(geometry, materialNext);
-    meshNext.position.copy(new THREE.Vector3(0, 0, 0));
-    groupNext.add(meshNext);
-
-    //指示文字精灵
-    const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
-        map: new THREE.TextureLoader().load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/yonger.png"),
-        transparent: true
-    }));
-    sprite.scale.set(18, 6, 1);
-    sprite.position.set(0, 0, -72);
-    sprite.center.set(0.5, 0);
-    commonGroup.add(sprite);
-
-    scene.add(group);
-    scene.add(commonGroup);
-
-    //性能检测工具
-    const stats = new Stats();
-
-    const indexRef = useRef(0);
-
-    //渲染器
-    const renderer = new THREE.WebGLRenderer({
-        antialias: true
-    });
-    renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.setSize(window.innerWidth, window.innerHeight);
-
-    //相机控制工具
-    const orbitControls = new OrbitControls(camera, renderer.domElement);
-    orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
-    orbitControls.target = mesh.position;
-    orbitControls.minDistance = 2;
-    orbitControls.panSpeed = 2;
-    orbitControls.enablePan = false;
-    orbitControls.autoRotate = true;
-
-    const cameraAnimation = () => {
-        orbitControls.maxDistance = Number.POSITIVE_INFINITY;
-        camera.position.copy(cameraStartPosition);
-        const terval = setInterval(() => {
-            camera.position.z -= 1000 / ( 800 / 50 );
-            mesh.rotation.z += 3 * Math.PI / ( 800 / 50 );
-            meshNext.rotation.copy(mesh.rotation);
-        }, 50);
-        setTimeout(() => {
-            orbitControls.maxDistance = 75;
-            mesh.rotation.set(0, 0, 0);
-            meshNext.rotation.set(0, 0, 0);
-            camera.position.copy(cameraEndPosition);
-            clearInterval(terval);
-        }, 800);
-    };
-
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
+
+        console.log("开始渲染...");
+        //场景
+        const scene = new THREE.Scene();
+
+        //场景组
+        const group = new THREE.Group();
+        const groupNext = new THREE.Group();
+        const commonGroup = new THREE.Group();
+
+
+        //加载进度显示
+        const loadingManager = new THREE.LoadingManager(() => {
+            cameraAnimation();
+        }, (url: string, loaded: number, total: number) => {
+            setProcess(Math.floor(loaded / total * 100));
+        });
+
+        //屏幕渲染相机
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50);
+
+        const cameraEndPosition = new THREE.Vector3(0, 0, 30);
+        const cameraStartPosition = new THREE.Vector3(0, 0, 1000);
+        camera.position.copy(cameraStartPosition);
+
+
+        //辅助坐标根据
+        const axesHelper = new THREE.AxesHelper(120);
+        commonGroup.add(axesHelper);
+
+        //相机辅助工具
+        const cameraHelper = new THREE.CameraHelper(new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 50));
+        commonGroup.add(cameraHelper);
+
+        //全景球
+        const geometry = new THREE.SphereBufferGeometry(80, 60, 60);
+        geometry.scale(-1, 1, 1);
+
+        const material = new THREE.MeshBasicMaterial({
+            map: new THREE.TextureLoader(loadingManager).load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/panorama.png")
+        });
+
+        const mesh = new THREE.Mesh(geometry, material);
+        mesh.position.copy(new THREE.Vector3(0, 0, 0));
+        group.add(mesh);
+
+
+        const materialNext = new THREE.MeshBasicMaterial({
+            map: new THREE.TextureLoader(loadingManager).load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/panorama3.png")
+        });
+
+        const meshNext = new THREE.Mesh(geometry, materialNext);
+        meshNext.position.copy(new THREE.Vector3(0, 0, 0));
+        groupNext.add(meshNext);
+
+        //指示文字精灵
+        const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+            map: new THREE.TextureLoader(loadingManager).load("https://xiaohaoo.oss-cn-beijing.aliyuncs.com/image/yonger.png"),
+            transparent: true
+        }));
+        sprite.scale.set(18, 6, 1);
+        sprite.position.set(0, 0, -72);
+        sprite.center.set(0.5, 0);
+        commonGroup.add(sprite);
+
+        scene.add(group);
+        scene.add(commonGroup);
+
+        //性能检测工具
+        const stats = new Stats();
+
+
+        //渲染器
+        const renderer = new THREE.WebGLRenderer({
+            antialias: true
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+
+
+        viewRef.current?.appendChild(renderer.domElement);
+        viewRef.current?.appendChild(stats.dom);
+
+        const render = (event: number) => {
+            orbitControls.update();
+            cameraHelper.update();
+            renderer.render(scene, camera);
+            stats.update();
+        };
+        renderer.setAnimationLoop(render);
+
+        //相机控制工具
+        const orbitControls = new OrbitControls(camera, renderer.domElement);
+        orbitControls.rotateSpeed = -0.5 * orbitControls.rotateSpeed;
+        orbitControls.target = mesh.position;
+        orbitControls.minDistance = 2;
+        orbitControls.panSpeed = 2;
+        orbitControls.enablePan = false;
+        orbitControls.autoRotate = true;
+
+        const cameraAnimation = () => {
+            orbitControls.maxDistance = Number.POSITIVE_INFINITY;
+            camera.position.copy(cameraStartPosition);
+            const terval = setInterval(() => {
+                camera.position.z -= 1000 / ( 800 / 50 );
+                mesh.rotation.z += 3 * Math.PI / ( 800 / 50 );
+                meshNext.rotation.copy(mesh.rotation);
+            }, 50);
+            setTimeout(() => {
+                clearInterval(terval);
+                orbitControls.maxDistance = 75;
+                mesh.rotation.set(0, 0, 0);
+                meshNext.rotation.copy(mesh.rotation);
+                camera.position.copy(cameraEndPosition);
+            }, 800);
+        };
+
+
         //手势检测
         const hammer = new Hammer(viewRef?.current || document.body);
         hammer.on("tap", (event) => {
@@ -134,35 +161,26 @@ export default function App() {
             if (intersects.length > 0) {
                 orbitControls.reset();
                 cameraAnimation();
-                if (indexRef.current === 1) {
+                if (currentIndex === 1) {
                     scene.clear();
                     sprite.position.set(0, 0, -72);
                     scene.add(group);
                     scene.add(commonGroup);
-                    indexRef.current = 0;
+                    setCurrentIndex(0);
                 } else {
                     scene.clear();
                     sprite.position.set(0, 28, -70);
                     scene.add(groupNext);
                     scene.add(commonGroup);
-                    indexRef.current = 1;
+                    setCurrentIndex(1);
                 }
             }
         });
 
-        viewRef?.current?.appendChild(renderer.domElement);
-        viewRef?.current?.appendChild(stats.dom);
-
-        cameraAnimation();
-
-        const render = (event: number) => {
-            orbitControls.update();
-            cameraHelper.update();
-            renderer.render(scene, camera);
-            stats.update();
-        };
-        renderer.setAnimationLoop(render);
 
     }, []);
-    return <div ref={viewRef} />;
+    return <div>
+        <div style={{ display: process >= 100 ? "" : "none" }} ref={viewRef} />
+        <div style={{ display: process < 100 ? "" : "none" }} className={"loading"}>{process}%</div>
+    </div>;
 }
