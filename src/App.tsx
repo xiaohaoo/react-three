@@ -29,10 +29,9 @@ export default function App() {
 
     console.log("开始加载...");
 
-    const [currentIndex, setCurrentIndex] = useState(0);
+    const currentIndex = useRef(0);
 
     useEffect(() => {
-
         console.log("开始渲染...");
         //场景
         const scene = new THREE.Scene();
@@ -111,7 +110,6 @@ export default function App() {
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(window.innerWidth, window.innerHeight);
 
-
         viewRef.current?.appendChild(renderer.domElement);
         viewRef.current?.appendChild(stats.dom);
 
@@ -142,13 +140,12 @@ export default function App() {
             }, 50);
             setTimeout(() => {
                 clearInterval(terval);
-                orbitControls.maxDistance = 75;
                 mesh.rotation.set(0, 0, 0);
                 meshNext.rotation.copy(mesh.rotation);
                 camera.position.copy(cameraEndPosition);
+                orbitControls.maxDistance = 75;
             }, 800);
         };
-
 
         //手势检测
         const hammer = new Hammer(viewRef?.current || document.body);
@@ -158,26 +155,25 @@ export default function App() {
             const raycaster = new THREE.Raycaster();
             raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
             const intersects = raycaster.intersectObject(sprite);
+
             if (intersects.length > 0) {
                 orbitControls.reset();
-                cameraAnimation();
-                if (currentIndex === 1) {
+                if (currentIndex.current == 1) {
                     scene.clear();
                     sprite.position.set(0, 0, -72);
                     scene.add(group);
                     scene.add(commonGroup);
-                    setCurrentIndex(0);
+                    currentIndex.current = 0;
                 } else {
                     scene.clear();
                     sprite.position.set(0, 28, -70);
                     scene.add(groupNext);
                     scene.add(commonGroup);
-                    setCurrentIndex(1);
+                    currentIndex.current = 1;
                 }
+                cameraAnimation();
             }
         });
-
-
     }, []);
     return <div>
         <div style={{ display: process >= 100 ? "" : "none" }} ref={viewRef} />
